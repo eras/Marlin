@@ -45,6 +45,9 @@ int target_bed_high_temp =0;
 #endif
 int current_raw[EXTRUDERS] = { 0 };
 int current_raw_bed = 0;
+#if (JOYSTICK_NUM_AXIS > 0)
+int current_joystick[JOYSTICK_NUM_AXIS];
+#endif
 
 #ifdef PIDTEMP
   // used external
@@ -614,6 +617,22 @@ void tp_init()
        DIDR2 |= 1<<(TEMP_BED_PIN - 8); 
     #endif
   #endif
+#if 0
+  #if (JOYSTICK_X_PIN > -1)
+    #if JOYSTICK_X_PIN < 8
+       DIDR0 |= 1<<JOYSTICK_X_PIN; 
+    #else
+       DIDR2 |= 1<<(JOYSTICK_X_PIN - 8); 
+    #endif
+  #endif
+  #if (JOYSTICK_Y_PIN > -1)
+    #if JOYSTICK_Y_PIN < 8
+       DIDR0 |= 1<<JOYSTICK_Y_PIN; 
+    #else
+       DIDR2 |= 1<<(JOYSTICK_Y_PIN - 8); 
+    #endif
+  #endif
+#endif
   
   // Use timer0 for temperature measurement
   // Interleave temperature interrupt with millies interrupt
@@ -802,6 +821,9 @@ ISR(TIMER0_COMPB_vect)
   static unsigned long raw_temp_1_value = 0;
   static unsigned long raw_temp_2_value = 0;
   static unsigned long raw_temp_bed_value = 0;
+#if (JOYSTICK_NUM_AXIS > 0)
+  static unsigned long raw_joystick_value[JOYSTICK_NUM_AXIS] = { 0 };
+#endif
   static unsigned char temp_state = 0;
   static unsigned char pwm_count = 1;
   static unsigned char soft_pwm_0;
@@ -915,8 +937,51 @@ ISR(TIMER0_COMPB_vect)
       #if (TEMP_2_PIN > -1)
         raw_temp_2_value += ADC;
       #endif
-      temp_state = 0;
+      temp_state = 8;
       temp_count++;
+      break;
+    case 8: // Prepare JOYSTICK_X
+      #if (JOYSTICK_X_PIN > -1 && JOYSTICK_NUM_AXIS >= 1)
+        #if JOYSTICK_X_PIN > 7
+          ADCSRB = 1<<MUX5;
+        #else
+          ADCSRB = 0;
+        #endif
+        ADMUX = ((1 << REFS0) | (JOYSTICK_X_PIN & 0x07));
+        ADCSRA |= 1<<ADSC; // Start conversion
+      #endif
+      #ifdef ULTIPANEL
+        buttons_check();
+      #endif
+      temp_state = 9;
+      // no temp_count increment
+      break;
+    case 9: // Measure JOYSTICK_X
+      #if (JOYSTICK_X_PIN > -1 && JOYSTICK_NUM_AXIS >= 1)
+        raw_joystick_value[0] += ADC;
+      #endif
+      temp_state = 10;
+      break;
+    case 10: // Prepare JOYSTICK_Y
+      #if (JOYSTICK_Y_PIN > -1 && JOYSTICK_NUM_AXIS >= 2)
+        #if JOYSTICK_Y_PIN > 7
+          ADCSRB = 1<<MUX5;
+        #else
+          ADCSRB = 0;
+        #endif
+        ADMUX = ((1 << REFS0) | (JOYSTICK_Y_PIN & 0x07));
+        ADCSRA |= 1<<ADSC; // Start conversion
+      #endif
+      #ifdef ULTIPANEL
+        buttons_check();
+      #endif
+      temp_state = 11;
+      break;
+    case 11: // Measure JOYSTICK_Y
+      #if (JOYSTICK_Y_PIN > -1 && JOYSTICK_NUM_AXIS >= 2)
+        raw_joystick_value[1] += ADC;
+      #endif
+      temp_state = 0;
       break;
 //    default:
 //      SERIAL_ERROR_START;
@@ -981,6 +1046,13 @@ ISR(TIMER0_COMPB_vect)
           #endif
        }
     }
+
+#if JOYSTICK_NUM_AXIS > 0
+    for (int a = 0; a < JOYSTICK_NUM_AXIS; ++a) {
+      current_joystick[a] = raw_joystick_value[a];
+      raw_joystick_value[a] = 0;
+    }
+#endif
   
 #if defined(BED_MAXTEMP) && (HEATER_BED_PIN > -1)
     if(current_raw_bed >= bed_maxttemp) {
@@ -992,3 +1064,11 @@ ISR(TIMER0_COMPB_vect)
   }
 }
 
+void getJoystick(int joystick[JOYSTICK_NUM_AXIS])
+{
+#if (JOYSTICK_NUM_AXIS > 0)
+  for (int a = 0; a < JOYSTICK_NUM_AXIS; ++a) {
+    joystick[a] = current_joystick[a];
+  }
+#endif
+}

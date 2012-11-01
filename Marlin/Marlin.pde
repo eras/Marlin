@@ -37,6 +37,7 @@
 #include "EEPROMwrite.h"
 #include "language.h"
 #include "pins_arduino.h"
+#include "joystick.h"
 
 #define VERSION_STRING  "1.0.0 RC2"
 
@@ -300,6 +301,7 @@ void setup()
   st_init();    // Initialize stepper;
   wd_init();
   setup_photpin();
+  joystick_init();
   
   LCD_INIT;
 }
@@ -347,6 +349,7 @@ void loop()
 
 void get_command() 
 { 
+  joystick_handle(current_position, destination, feedrate);
   while( MYSERIAL.available() > 0  && buflen < BUFSIZE) {
     serial_char = MYSERIAL.read();
     if(serial_char == '\n' || 

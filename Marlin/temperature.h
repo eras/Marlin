@@ -152,6 +152,8 @@ void disable_heater();
 void setWatch();
 void updatePID();
 
+void getJoystick(int joystick[JOYSTICK_NUM_AXIS]);
+
 FORCE_INLINE void autotempShutdown(){
  #ifdef AUTOTEMP
  if(autotemp_enabled)

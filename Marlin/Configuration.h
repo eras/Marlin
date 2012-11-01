@@ -244,6 +244,8 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Data from: http://www.doc-diy.net/photo/rc-1_hacked/
 // #define PHOTOGRAPH_PIN     23
 
+#define JOYSTICK_NUM_AXIS 2
+
 #include "Configuration_adv.h"
 #include "thermistortables.h"
 
