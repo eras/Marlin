@@ -3,6 +3,8 @@
 #include "joystick.h"
 #include "Marlin.h"
 #include "temperature.h"
+// stepper suspension
+#include "stepper.h"
 
 #define JOYSTICK_MIDPOINT 8192
 
@@ -49,6 +51,7 @@ void joystick_handle(float current_position[NUM_AXIS],
     return;
   }
 
+  static bool was_moved = false;
   unsigned long time_now = micros();
   static unsigned long time_prev = 0;
   unsigned long delta = time_now - time_prev;
@@ -65,14 +68,23 @@ void joystick_handle(float current_position[NUM_AXIS],
     SERIAL_ECHOPAIR(" Y ", y_adj); 
     SERIAL_ECHOPAIR(" delta ", delta); 
     SERIAL_ECHOLN(""); 
+
+    destination[X_AXIS] = current_position[X_AXIS] + x_adj;
+    destination[Y_AXIS] = current_position[Y_AXIS] + y_adj;
+
+    feedrate = sqrt(x_adj * x_adj + y_adj * y_adj) * 5000;
+
+    prepare_move();
+
+    was_moved = true;
+  } else {
+    if (was_moved) {
+      st_synchronize();
+      disable_e0();
+      disable_e1();
+      disable_e2();
+      finishAndDisableSteppers();
+    }
+    was_moved = false;
   }
-  
-#if 1
-  destination[X_AXIS] = current_position[X_AXIS] + x_adj;
-  destination[Y_AXIS] = current_position[Y_AXIS] + y_adj;
-
-  feedrate = 5000;//sqrt(x_adj * x_adj + y_adj * y_adj);
-
-  prepare_move();
-#endif
 }
