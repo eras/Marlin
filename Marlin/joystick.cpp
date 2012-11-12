@@ -64,12 +64,14 @@ void joystick_handle(float current_position[NUM_AXIS],
   get(x_adj, y_adj, delta);
 
   if (x_adj != 0 || y_adj != 0) {
+#if 0
     SERIAL_ECHO_START;
     SERIAL_ECHOPAIR(" X ", x_adj); 
     SERIAL_ECHOPAIR(" Y ", y_adj); 
     SERIAL_ECHOPAIR(" delta ", delta); 
     SERIAL_ECHOPAIR(" button ", digitalRead(JOYSTICK_BUTTON_PIN)); 
     SERIAL_ECHOLN(""); 
+#endif
 
     destination[X_AXIS] = current_position[X_AXIS] + x_adj;
     destination[Y_AXIS] = current_position[Y_AXIS] + y_adj;
