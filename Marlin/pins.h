@@ -280,7 +280,8 @@
 #define LED_PIN            13
 
 #if MOTHERBOARD == 33
-#define FAN_PIN            9 // (Sprinter config)
+#define CONTROLLERFAN_PIN  9
+#define FAN_PIN            45 // (Sprinter config)
 #else
 #define FAN_PIN            4 // IO pin. Buffer needed
 #endif
