@@ -34,14 +34,15 @@ void joystick_init()
 {
   SERIAL_ECHO_START;
   SERIAL_ECHOLNPGM("Joystick configured (enable by pushing button)");
-  pinMode(JOYSTICK_BUTTON, INPUT);
+  pinMode(JOYSTICK_BUTTON_PIN, INPUT);
+  digitalWrite(JOYSTICK_BUTTON_PIN, HIGH);
 }
 
 void joystick_handle(float current_position[NUM_AXIS],
                      float destination[NUM_AXIS],
                      float& feedrate)
 {
-  if (!joystick_enabled && digitalRead(JOYSTICK_BUTTON)) {
+  if (!joystick_enabled && digitalRead(JOYSTICK_BUTTON_PIN) == LOW) {
     joystick_enabled = true;
     SERIAL_ECHO_START;
     SERIAL_ECHOLNPGM("Joystick enabled by pushing button");
@@ -67,6 +68,7 @@ void joystick_handle(float current_position[NUM_AXIS],
     SERIAL_ECHOPAIR(" X ", x_adj); 
     SERIAL_ECHOPAIR(" Y ", y_adj); 
     SERIAL_ECHOPAIR(" delta ", delta); 
+    SERIAL_ECHOPAIR(" button ", digitalRead(JOYSTICK_BUTTON_PIN)); 
     SERIAL_ECHOLN(""); 
 
     destination[X_AXIS] = current_position[X_AXIS] + x_adj;
