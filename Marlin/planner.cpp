@@ -438,6 +438,8 @@ void check_axes_activity() {
   else {
     #if FAN_PIN > -1
       if (FanSpeed != 0){
+	SET_OUTPUT(FANPOWER_PIN);
+	WRITE(FANPOWER_PIN, HIGH);
         analogWrite(FAN_PIN,FanSpeed); // If buffer is empty use current fan speed
       }
     #endif
@@ -448,10 +450,14 @@ void check_axes_activity() {
   if((DISABLE_E) && (e_active == 0)) { disable_e0();disable_e1();disable_e2(); }
   #if FAN_PIN > -1
   if((FanSpeed == 0) && (fan_speed ==0)) {
+    SET_OUTPUT(FANPOWER_PIN);
+    WRITE(FANPOWER_PIN, LOW);
     analogWrite(FAN_PIN, 0);
   }
 
   if (FanSpeed != 0 && tail_fan_speed !=0) { 
+    SET_OUTPUT(FANPOWER_PIN);
+    WRITE(FANPOWER_PIN, HIGH);
     analogWrite(FAN_PIN,tail_fan_speed);
   }
   #endif

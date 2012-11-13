@@ -280,8 +280,8 @@
 #define LED_PIN            13
 
 #if MOTHERBOARD == 33
-#define CONTROLLERFAN_PIN  9
 #define FAN_PIN            45 // (Sprinter config)
+#define FANPOWER_PIN       9 // another pin for controlling whether the power is enabled
 #else
 #define FAN_PIN            4 // IO pin. Buffer needed
 #endif
@@ -1139,7 +1139,7 @@
 #define JOYSTICK_BUTTON_PIN 44 // digital pin
 
 #define SENSITIVE_PINS {0, 1, X_STEP_PIN, X_DIR_PIN, X_ENABLE_PIN, X_MIN_PIN, X_MAX_PIN, Y_STEP_PIN, Y_DIR_PIN, Y_ENABLE_PIN, Y_MIN_PIN, Y_MAX_PIN, Z_STEP_PIN, Z_DIR_PIN, Z_ENABLE_PIN, Z_MIN_PIN, Z_MAX_PIN, LED_PIN, PS_ON_PIN, \
-                        HEATER_BED_PIN, FAN_PIN,                  \
+                        HEATER_BED_PIN, FAN_PIN, FANPOWER_PIN,				\
                         _E0_PINS _E1_PINS _E2_PINS             \
                         TEMP_0_PIN, TEMP_1_PIN, TEMP_2_PIN, TEMP_BED_PIN }
 #endif
