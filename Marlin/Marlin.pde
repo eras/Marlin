@@ -557,6 +557,19 @@ bool code_seen(char code)
     endstops_hit_on_purpose();\
   }
 
+void set_psu(bool state)
+{
+#if (PS_ON_PIN > -1)
+  if (state) {
+    SET_OUTPUT(PS_ON_PIN); //GND
+    WRITE(PS_ON_PIN, LOW);
+  } else {
+    SET_INPUT(PS_ON_PIN); //Floating
+    WRITE(PS_ON_PIN, HIGH);
+  }
+#endif
+}
+
 void process_commands()
 {
   unsigned long codenum; //throw away variable
@@ -1002,8 +1015,7 @@ void process_commands()
 
     #if (PS_ON_PIN > -1)
       case 80: // M80 - ATX Power On
-        SET_OUTPUT(PS_ON_PIN); //GND
-        WRITE(PS_ON_PIN, LOW);
+	set_psu(true);
         break;
       #endif
       
@@ -1013,7 +1025,7 @@ void process_commands()
         st_synchronize();
         suicide();
       #elif (PS_ON_PIN > -1)
-        SET_INPUT(PS_ON_PIN); //Floating
+	set_psu(false);
       #endif
 		break;
         
@@ -1495,7 +1507,7 @@ void kill()
   disable_e1();
   disable_e2();
   
-  if(PS_ON_PIN > -1) pinMode(PS_ON_PIN,INPUT);
+  set_psu(false);
   SERIAL_ERROR_START;
   SERIAL_ERRORLNPGM(MSG_ERR_KILLED);
   LCD_MESSAGEPGM(MSG_KILLED);
