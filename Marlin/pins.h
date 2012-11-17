@@ -281,7 +281,7 @@
 
 #if MOTHERBOARD == 33
 #define FAN_PIN            45 // (Sprinter config)
-#define FANPOWER_PIN       9 // another pin for controlling whether the power is enabled
+#define FANPOWER_PIN       43 // another pin for controlling whether the power is enabled
 #else
 #define FAN_PIN            4 // IO pin. Buffer needed
 #endif
