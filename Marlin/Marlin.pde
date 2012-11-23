@@ -86,13 +86,14 @@
 // M83  - Set E codes relative while in Absolute Coordinates (G90) mode
 // M84  - Disable steppers until next move, 
 //        or use S<seconds> to specify an inactivity timeout, after which the steppers will be disabled.  S0 to disable the timeout.
-// M85  - Set inactivity shutdown timer with parameter S<seconds>. To disable set zero (default)
+// M85  - Set inactivity shutdown timer with parameter S<seconds>. To disable set zero (default). Look also M185
 // M92  - Set axis_steps_per_unit - same syntax as G92
 // M114 - Output current position to serial port 
 // M115	- Capabilities string
 // M117 - display message
 // M119 - Output Endstop status to serial port
 // M140 - Set bed target temp
+// M185 - Set inactivity soft shutdown timer with parameter S<seconds>. To disable set zero (default)
 // M190 - Wait for bed current temp to reach target temp.
 // M200 - Set filament diameter
 // M201 - Set max acceleration in units/s^2 for print moves (M201 X1000 Y1000)
@@ -171,6 +172,15 @@ const int sensitive_pins[] = SENSITIVE_PINS; // Sensitive pin list for M42
 //Inactivity shutdown variables
 static unsigned long previous_millis_cmd = 0;
 static unsigned long max_inactive_time = 0;
+
+static unsigned long max_soft_inactive_time = 0;
+enum SoftInacitivityState {
+  SIS_NOT_ENABLED,
+  SIS_WAITING,
+  SIS_INACTIVATION
+};
+static SoftInacitivityState soft_inactive_state = SIS_NOT_ENABLED;
+
 static unsigned long stepper_inactive_time = DEFAULT_STEPPER_DEACTIVE_TIME*1000l;
 
 static unsigned long starttime=0;
@@ -575,6 +585,10 @@ void process_commands()
   unsigned long codenum; //throw away variable
   char *starpos = NULL;
 
+  // soft inactivity uses this to disregard 'not real' activity, such
+  // as what Printrun does automatically
+  bool actual_activity = true; 
+
   if(code_seen('G'))
   {
     switch((int)code_value())
@@ -855,6 +869,7 @@ void process_commands()
       if (code_seen('S')) setTargetBed(code_value());
       break;
     case 105 : // M105
+      actual_activity = false;
       tmp_extruder = active_extruder;
       if(code_seen('T')) {
         tmp_extruder = code_value();
@@ -1071,6 +1086,16 @@ void process_commands()
     case 85: // M85
       code_seen('S');
       max_inactive_time = code_value() * 1000; 
+      break;
+    case 185: // M185
+      actual_activity = false; // let's not trigger activity from this command
+      code_seen('S');
+      SERIAL_ECHO_START;
+      SERIAL_ECHOLN("Soft inactivity enabled");
+      max_soft_inactive_time = code_value() * 1000;
+      if (max_soft_inactive_time > 0) {
+        soft_inactive_state = SIS_WAITING;
+      }
       break;
     case 92: // M92
       for(int8_t i=0; i < NUM_AXIS; i++) 
@@ -1333,6 +1358,12 @@ void process_commands()
   }
 
   ClearToSend();
+
+  if (soft_inactive_state == SIS_WAITING && actual_activity) {
+    SERIAL_ECHO_START;
+    SERIAL_ECHOLN("Activity detected: soft inactivity disabled");
+    soft_inactive_state = SIS_NOT_ENABLED;
+  }
 }
 
 void FlushSerialRequestResend()
@@ -1457,6 +1488,21 @@ void manage_inactivity(byte debug)
   if( (millis() - previous_millis_cmd) >  max_inactive_time ) 
     if(max_inactive_time) 
       kill(); 
+  if(soft_inactive_state == SIS_WAITING && (millis() - previous_millis_cmd) >  max_soft_inactive_time) {
+    soft_inactive_state = SIS_INACTIVATION;
+    SERIAL_ECHO_START;
+    SERIAL_ECHOLN("Soft inactivation time expired, turning fan and PSU off");
+    FanSpeed = 0;
+    set_psu(false);
+    if(blocks_queued() == false) {
+      disable_x();
+      disable_y();
+      disable_z();
+      disable_e0();
+      disable_e1();
+      disable_e2();
+    }
+  }
   if(stepper_inactive_time)  {
     if( (millis() - previous_millis_cmd) >  stepper_inactive_time ) 
     {
